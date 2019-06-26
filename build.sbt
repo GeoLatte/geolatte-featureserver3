@@ -1,34 +1,54 @@
-val Http4sVersion = "0.20.0-M7"
-val CirceVersion = "0.11.1"
-val Specs2Version = "4.1.0"
-val LogbackVersion = "1.2.3"
+lazy val commonSettings = Seq(
+  organization := "org.geolatte",
+  name := "featureserver3",
+  version := "0.0.1-SNAPSHOT",
+  scalaVersion := "2.12.8",
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-encoding",
+    "UTF-8",
+    "-language:higherKinds",
+    "-language:postfixOps",
+    "-language:implicitConversions",
+    "-feature",
+    "-Ypartial-unification",
+    "-Xfatal-warnings"
+  ),
+  addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
+  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
+)
+lazy val http = (project in file("http"))
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel"  %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
+      "org.http4s"     %% "http4s-blaze-server" % Http4sVersion,
+      "org.http4s"     %% "http4s-blaze-client" % Http4sVersion,
+      "org.http4s"     %% "http4s-circe"        % Http4sVersion,
+      "org.http4s"     %% "http4s-dsl"          % Http4sVersion withSources () withJavadoc (),
+      "io.circe"       %% "circe-generic"       % CirceVersion,
+      "org.specs2"     %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
+      "ch.qos.logback" % "logback-classic"      % LogbackVersion
+    )
+  )
+
+lazy val query = (project in file("query"))
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel"  %% "cats-effect"    % catsEffectVersion withSources () withJavadoc (),
+      "org.specs2"     %% "specs2-core"    % Specs2Version % "test" withJavadoc (),
+      "org.parboiled"  %% "parboiled"      % parboiledVersion withJavadoc (),
+      "ch.qos.logback" % "logback-classic" % LogbackVersion
+    )
+  )
 
 lazy val root = (project in file("."))
-  .settings(
-    organization := "org.geolatte",
-    name := "featureserver3",
-    version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.12.8",
-    scalacOptions ++= Seq("-Ypartial-unification"),
-    libraryDependencies ++= Seq(
-      "org.http4s"      %% "http4s-blaze-server" % Http4sVersion,
-      "org.http4s"      %% "http4s-blaze-client" % Http4sVersion,
-      "org.http4s"      %% "http4s-circe"        % Http4sVersion,
-      "org.http4s"      %% "http4s-dsl"          % Http4sVersion,
-      "io.circe"        %% "circe-generic"       % CirceVersion,
-      "org.specs2"      %% "specs2-core"         % Specs2Version % "test",
-      "ch.qos.logback"  %  "logback-classic"     % LogbackVersion
-      ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
-    addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
-    )
+  .aggregate(query, http)
 
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-encoding", "UTF-8",
-  "-language:higherKinds",
-  "-language:postfixOps",
-  "-feature",
-  "-Ypartial-unification",
-  "-Xfatal-warnings",
-  )
+val Http4sVersion     = "0.20.3"
+val CirceVersion      = "0.11.1"
+val Specs2Version     = "4.1.0"
+val LogbackVersion    = "1.2.3"
+val catsEffectVersion = "1.3.1"
+val parboiledVersion  = "2.1.7"
