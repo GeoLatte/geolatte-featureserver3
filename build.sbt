@@ -59,7 +59,7 @@ lazy val query = (project in file("query"))
   )
   .dependsOn(core)
 
-lazy val repository = (project in file("postgres"))
+lazy val postgres = (project in file("postgres"))
   .settings(
     name := "featureserver-postgres",
     commonSettings,
@@ -73,14 +73,14 @@ lazy val repository = (project in file("postgres"))
       "ch.qos.logback" % "logback-classic" % LogbackVersion
     )
   )
-  .dependsOn(core)
+  .dependsOn(core, query % "test->compile")
 
 lazy val root = (project in file("."))
   .settings(
     name := "featureserver3",
     commonSettings
   )
-  .aggregate(core, query, http, repository)
+  .aggregate(core, query, http, postgres)
 
 val Http4sVersion     = "0.20.3"
 val CirceVersion      = "0.11.1"
@@ -91,3 +91,6 @@ val parboiledVersion  = "2.1.7"
 val geomVersion       = "1.4.0"
 val fs2Version        = "1.0.5"
 val doobieVersion     = "0.7.0"
+
+//TODO -- use docker-compose to run integration tests such as in
+// https://github.com/lloydmeta/http4s-doobie-docker-scratchpad/blob/master/build.sbt
