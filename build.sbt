@@ -59,12 +59,28 @@ lazy val query = (project in file("query"))
   )
   .dependsOn(core)
 
+lazy val repository = (project in file("postgres"))
+  .settings(
+    name := "featureserver-postgres",
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect" % catsEffectVersion withSources () withJavadoc (),
+      "org.specs2"    %% "specs2-core" % Specs2Version % "test" withJavadoc (),
+      "org.specs2"    %% "specs2-cats" % Specs2Version % "test" withJavadoc (),
+      "org.tpolecat" %% "doobie-core"     % doobieVersion withJavadoc () withSources,
+      "org.tpolecat" %% "doobie-postgres" % doobieVersion withJavadoc () withSources,
+      "org.tpolecat"   %% "doobie-specs2"  % doobieVersion % "test",
+      "ch.qos.logback" % "logback-classic" % LogbackVersion
+    )
+  )
+  .dependsOn(core)
+
 lazy val root = (project in file("."))
   .settings(
     name := "featureserver3",
     commonSettings
   )
-  .aggregate(core, query, http)
+  .aggregate(core, query, http, repository)
 
 val Http4sVersion     = "0.20.3"
 val CirceVersion      = "0.11.1"
@@ -74,3 +90,4 @@ val catsEffectVersion = "1.3.1"
 val parboiledVersion  = "2.1.7"
 val geomVersion       = "1.4.0"
 val fs2Version        = "1.0.5"
+val doobieVersion     = "0.7.0"
