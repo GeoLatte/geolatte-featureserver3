@@ -2,6 +2,7 @@ package org.geolatte.featureserver
 
 import org.geolatte.featureserver.QueryExpr.Expr
 import fs2.Stream
+import org.geolatte.featureserver.Domain.Database
 import org.geolatte.geom.types._
 
 /**
@@ -43,7 +44,7 @@ trait Repository[F[_]] {
       explode: Boolean = false
   )
 
-  def listDatabases: F[List[String]]
+  def listDatabases: F[List[Database]]
 
   def createDb(dbname: String): F[Unit]
 

@@ -4,6 +4,7 @@ import cats.effect.{Bracket, Sync}
 import cats.implicits._
 import doobie._
 import doobie.implicits._
+import org.geolatte.featureserver.Domain._
 import org.geolatte.featureserver.{QueryExpr, Repository}
 import org.geolatte.geom.types.Position
 
@@ -12,7 +13,7 @@ import org.geolatte.geom.types.Position
   */
 class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extends Repository[F] {
 
-  override def listDatabases: F[List[String]] =
+  override def listDatabases: F[List[Database]] =
     Sql.listDbs.stream.collect { case Some(s) => s }.compile.toList.transact(xa)
 
   override def createDb(dbname: String): F[Unit] = ???

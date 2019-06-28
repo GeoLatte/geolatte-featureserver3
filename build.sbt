@@ -14,7 +14,7 @@ lazy val commonSettings = Seq(
     "-Xfatal-warnings"
   ),
   addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
-  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
+  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
 )
 lazy val core = (project in file("core"))
   .settings(
@@ -27,6 +27,7 @@ lazy val core = (project in file("core"))
       "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
+  .disablePlugins(RevolverPlugin)
 
 lazy val http = (project in file("http"))
   .settings(
@@ -44,6 +45,8 @@ lazy val http = (project in file("http"))
       "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
+  .dependsOn(core)
+  .disablePlugins(RevolverPlugin)
 
 lazy val query = (project in file("query"))
   .settings(
@@ -58,6 +61,7 @@ lazy val query = (project in file("query"))
     )
   )
   .dependsOn(core)
+  .disablePlugins(RevolverPlugin)
 
 lazy val postgres = (project in file("postgres"))
   .settings(
@@ -74,13 +78,20 @@ lazy val postgres = (project in file("postgres"))
     )
   )
   .dependsOn(core, query % "test->compile")
+  .disablePlugins(RevolverPlugin)
 
 lazy val root = (project in file("."))
   .settings(
     name := "featureserver3",
-    commonSettings
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
+      "org.specs2"    %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
+      "org.http4s"    %% "http4s-blaze-server" % Http4sVersion
+    )
   )
   .aggregate(core, query, http, postgres)
+  .dependsOn(core, query, http, postgres)
 
 val Http4sVersion     = "0.20.3"
 val CirceVersion      = "0.11.1"
