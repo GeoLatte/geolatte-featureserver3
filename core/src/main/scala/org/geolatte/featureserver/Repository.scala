@@ -1,6 +1,6 @@
 package org.geolatte.featureserver
 
-import org.geolatte.featureserver.QueryExpr.BooleanExpr
+import org.geolatte.featureserver.QueryExpr.Expr
 import fs2.Stream
 import org.geolatte.geom.types._
 
@@ -35,7 +35,7 @@ trait Repository[F[_]] {
   case class SpatialQuery(
       windowOpt: Option[Envelope[Position]] = None,
       intersectionGeometryWktOpt: Option[String] = None,
-      queryOpt: Option[BooleanExpr] = None,
+      queryOpt: Option[Expr] = None,
       projection: Option[Projection] = None,
       sort: List[SortSpec] = List(),
       metadata: Metadata,
@@ -74,11 +74,11 @@ trait Repository[F[_]] {
                               spatialQuery: SpatialQuery,
                               projection: Projection): F[List[String]]
 
-  def delete(database: String, collection: String, query: BooleanExpr): F[Boolean]
+  def delete(database: String, collection: String, query: Expr): F[Boolean]
 
   def update(database: String,
              collection: String,
-             query: BooleanExpr,
+             query: Expr,
              updateSpec: UpdateSpec): F[Int]
 
   //def writer(database: String, collection: String): FeatureWriter

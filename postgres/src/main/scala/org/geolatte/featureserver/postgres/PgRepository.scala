@@ -13,7 +13,7 @@ import org.geolatte.geom.types.Position
 class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extends Repository[F] {
 
   override def listDatabases: F[List[String]] =
-    Sql.listDbs.stream.collect{case Some(s) => s}.compile.toList.transact(xa)
+    Sql.listDbs.stream.collect { case Some(s) => s }.compile.toList.transact(xa)
 
   override def createDb(dbname: String): F[Unit] = ???
 
@@ -47,13 +47,11 @@ class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extend
                                        spatialQuery: SpatialQuery,
                                        projection: Projection): F[List[String]] = ???
 
-  override def delete(database: String,
-                      collection: String,
-                      query: QueryExpr.BooleanExpr): F[Boolean] = ???
+  override def delete(database: String, collection: String, query: QueryExpr.Expr): F[Boolean] = ???
 
   override def update(database: String,
                       collection: String,
-                      query: QueryExpr.BooleanExpr,
+                      query: QueryExpr.Expr,
                       updateSpec: UpdateSpec): F[Int] = ???
 
   /**

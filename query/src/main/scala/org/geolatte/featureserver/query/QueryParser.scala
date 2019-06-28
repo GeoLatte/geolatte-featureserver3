@@ -13,7 +13,7 @@ import org.geolatte.featureserver.{Parser => FParser}
   */
 object DefaultParser extends FParser {
 
-  override def parse[F[_]: Sync](s: String): F[BooleanExpr] = {
+  override def parse[F[_]: Sync](s: String): F[Expr] = {
     val parser = new QueryParser(s)
     //parse input, and in case of ParseErrors format a nice message
     import Parser.DeliveryScheme.Throw
@@ -30,28 +30,33 @@ object DefaultParser extends FParser {
 
 class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
 
-  private val toValList: AtomicExpr => ValueListExpr = v => ValueListExpr(List(v))
-  private val combineVals: (ValueListExpr, AtomicExpr) => ValueListExpr = (list, ve) =>
-    ValueListExpr(ve :: list.values)
-  private val printableChar                  = CharPredicate.Printable -- "'"
+  private val toValList: Atom => List[Atom] = v => List(v)
+  private val combineVals: (List[Atom], Atom) => List[Atom] = (list, ve) => ve :: list
   private val toNum: String => LiteralNumber = (s: String) => LiteralNumber(BigDecimal(s))
 
-  def InputLine: Rule1[BooleanExpr] = rule { BooleanExpression ~ EOI }
 
-  def BooleanExpression: Rule1[BooleanExpr] = rule {
+  private val printableChar                  = CharPredicate.Printable -- "'"
+
+  def InputLine: Rule1[Expr] = rule { BooleanExpression ~ EOI }
+
+  def BooleanExpression: Rule1[Expr] = rule {
     BooleanTerm ~ WS ~ zeroOrMore(ignoreCase("or") ~ WS ~ BooleanTerm ~> BooleanOr)
   }
 
-  def BooleanTerm: Rule1[BooleanExpr] = rule {
+  def BooleanTerm: Rule1[Expr] = rule {
     BooleanFactor ~ WS ~ zeroOrMore(ignoreCase("and") ~ WS ~ BooleanFactor ~> BooleanAnd)
   }
 
-  private def BooleanFactor = rule {
+  def MayBe: Rule1[Boolean] = rule {
+    ignoreCase("is") ~ push(true) ~ WS ~ optional(ignoreCase("not") ~> ((_: Boolean) => false))
+  }
+
+  private def BooleanFactor: Rule1[Expr] = rule {
     WS ~ ignoreCase("not") ~ WS ~ BooleanPrim ~> BooleanNot | BooleanPrim
   }
 
   private def BooleanPrim = rule {
-    WS ~ ch('(') ~ WS ~ BooleanExpression ~ WS ~ ch(')') ~ WS | Predicate
+                                   (WS ~ ch('(') ~ WS ~ BooleanExpression ~ WS ~ ch(')') ~ WS) | Predicate
   }
 
   private def Predicate = rule {
@@ -61,7 +66,7 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   private def spatialRelPred = rule { intersectsTest }
 
   private def intersectsTest = rule {
-    (WS ~ ignoreCase("intersects") ~ WS ~ GeomLiteral) ~> IntersectsPredicate
+    (WS ~ ignoreCase("intersects") ~ WS ~ GeomLiteral) ~> IntersectsExpr
   }
 
   private def GeomLiteral = rule {
@@ -69,35 +74,31 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def isNullPred = rule {
-    WS ~ AtomicExpression ~ WS ~ MayBe ~ WS ~ ignoreCase("null") ~> NullTestPredicate
-  }
-
-  def MayBe: Rule1[Boolean] = rule {
-    ignoreCase("is") ~ push(true) ~ WS ~ optional(ignoreCase("not") ~> ((_: Boolean) => false))
+    WS ~ AtomicExpression ~ WS ~ MayBe ~ WS ~ ignoreCase("null") ~> NullTestExpr
   }
 
   private def LikePred = rule {
-    (WS ~ AtomicExpression ~ WS ~ ignoreCase("like") ~ WS ~ Like) ~> LikePredicate
+    (WS ~ AtomicExpression ~ WS ~ ignoreCase("like") ~ WS ~ LikeR) ~> LikeExpr
   }
 
   private def ILikePred = rule {
-    (WS ~ AtomicExpression ~ WS ~ ignoreCase("ilike") ~ WS ~ Like) ~> ILikePredicate
+    (WS ~ AtomicExpression ~ WS ~ ignoreCase("ilike") ~ WS ~ LikeR) ~> ILikeExpr
   }
 
-  private def RegexPred = rule { (WS ~ AtomicExpression ~ WS ~ "~" ~ WS ~ Regex) ~> RegexPredicate }
+  private def RegexPred = rule { (WS ~ AtomicExpression ~ WS ~ "~" ~ WS ~ RegexR) ~> RegexExpr }
 
   private def InPred = rule {
-    (WS ~ AtomicExpression ~ WS ~ ignoreCase("in") ~ WS ~ ExpressionList ~ WS) ~> InPredicate
+    (WS ~ AtomicExpression ~ WS ~ ignoreCase("in") ~ WS ~ ExpressionList ~ WS) ~> InExpr
   }
 
   private def BetweenAndPred = rule {
     (WS ~ AtomicExpression ~ WS ~ ignoreCase("between") ~ WS ~ AtomicExpression ~ WS ~ ignoreCase(
       "and"
-    ) ~ WS ~ AtomicExpression ~ WS) ~> BetweenAndPredicate
+    ) ~ WS ~ AtomicExpression ~ WS) ~> BetweenAndExpr
   }
 
   private def ComparisonPred = rule {
-    (WS ~ AtomicExpression ~ WS ~ ComparisonOp ~ AtomicExpression ~ WS) ~> ComparisonPredicate
+    (WS ~ AtomicExpression ~ WS ~ ComparisonOp ~ AtomicExpression ~ WS) ~> ComparisonExpr
   }
 
   private def ComparisonOp = rule {
@@ -107,7 +108,7 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def JsonContainsPred = rule {
-    (WS ~ Property ~ WS ~ ignoreCase("@>") ~ WS ~ LiteralStr ~ WS) ~> JsonContainsPredicate
+    (WS ~ PropertyR ~ WS ~ ignoreCase("@>") ~ WS ~ LiteralStr ~ WS) ~> JsonContainsExpr
   }
 
   private def ExpressionList = rule {
@@ -117,19 +118,19 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def AtomicExpression = rule {
-    FunctionApp | LiteralBool | LiteralStr | LiteralNum | Property
+    FunctionApp | LiteralBool | LiteralStr | LiteralNum | PropertyR
   }
 
   private def FunctionApp = rule { ToDateApp }
 
   private def ToDateApp = rule {
-    (WS ~ ignoreCase("to_date") ~ WS ~ "(" ~ (LiteralStr | Property) ~ WS ~ "," ~ WS ~ LiteralStr ~ WS ~ ")" ~ WS) ~> ToDate
+    (WS ~ ignoreCase("to_date") ~ WS ~ "(" ~ (LiteralStr | PropertyR) ~ WS ~ "," ~ WS ~ LiteralStr ~ WS ~ ")" ~ WS) ~> ToDate
   }
 
   private def LiteralBool = rule {
-    (ignoreCase("true") ~ push(LiteralBoolean(true))) | (ignoreCase("false") ~ push(
-      LiteralBoolean(false)
-    ))
+    (ignoreCase("true") ~ push( LiteralBoolean( true ) )) | (ignoreCase( "false" ) ~ push(
+      LiteralBoolean( false )
+      ))
   }
 
   private def LiteralNum = rule { capture(Number) ~> toNum }
@@ -141,19 +142,19 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
     )
   }
 
-  private def Regex = rule {
+  private def RegexR = rule {
     ch('/') ~ clearSB() ~ zeroOrMore(noneOf("/") ~ appendSB()) ~ ch('/') ~ push(
-      RegexExpr(sb.toString)
-    )
+      Regex( sb.toString )
+      )
   }
 
-  private def Like = rule {
+  private def LikeR = rule {
     '\'' ~ clearSB() ~ zeroOrMore((printableChar | "\'\'") ~ appendSB()) ~ '\'' ~ push(
-      LikeExpr(sb.toString)
-    )
+      Like( sb.toString )
+      )
   }
 
-  private def Property = rule { capture(NameString) ~> PropertyExpr ~ WS }
+  private def PropertyR = rule { capture(NameString) ~> Property ~ WS }
 
   //basic tokens
   private def NameString = rule { !('\'' | ch('"')) ~ FirstNameChar ~ zeroOrMore(nonFirstNameChar) }
