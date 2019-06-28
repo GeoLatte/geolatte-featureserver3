@@ -1,66 +1,37 @@
-package org.geolatte.query
+package org.geolatte.featureserver.query
 
 import cats.effect._
 import cats.implicits._
 import org.parboiled2._
+import org.geolatte.featureserver.QueryExpr._
+import org.geolatte.featureserver.{Parser => FParser}
 
 /**
   * A parser for simple Query expression
   *
   * Created by Karel Maesen, Geovise BVBA on 15/01/15.
   */
-sealed trait Expr
+object DefaultParser extends FParser {
 
-sealed trait BooleanExpr
-case class BooleanOr(lhs: BooleanExpr, rhs: BooleanExpr)  extends BooleanExpr
-case class BooleanAnd(lhs: BooleanExpr, rhs: BooleanExpr) extends BooleanExpr
-case class BooleanNot(expr: BooleanExpr)                  extends BooleanExpr
-
-sealed trait Predicate extends BooleanExpr
-case class ComparisonPredicate(lhs: AtomicExpr, op: ComparisonOperator, rhs: AtomicExpr)
-    extends Predicate
-case class InPredicate(lhs: AtomicExpr, rhs: ValueListExpr)    extends Predicate
-case class RegexPredicate(lhs: AtomicExpr, rhs: RegexExpr)     extends Predicate
-case class LikePredicate(lhs: AtomicExpr, rhs: LikeExpr)       extends Predicate
-case class ILikePredicate(lhs: AtomicExpr, rhs: LikeExpr)      extends Predicate
-case class NullTestPredicate(lhs: AtomicExpr, isNull: Boolean) extends Predicate
-case class IntersectsPredicate(wkt: Option[String]) extends Predicate {
-  def intersectsWithBbox: Boolean = wkt.isDefined
+  override def parse[F[_]: Sync](s: String): F[BooleanExpr] = {
+    val parser = new QueryParser(s)
+    //parse input, and in case of ParseErrors format a nice message
+    import Parser.DeliveryScheme.Throw
+    Sync[F]
+      .delay(parser.InputLine.run())
+      .adaptError {
+        case pe: ParseError =>
+          new QueryParserException(
+            parser.formatError(pe, new ErrorFormatter(showExpected = true, showPosition = true))
+          )
+      }
+  }
 }
-case class JsonContainsPredicate(lhs: PropertyExpr, rhs: LiteralString)          extends Predicate
-case class BetweenAndPredicate(date: AtomicExpr, lb: AtomicExpr, up: AtomicExpr) extends Predicate
-
-sealed trait AtomicExpr extends Expr
-
-case class LiteralString(value: String)              extends AtomicExpr
-case class LiteralNumber(value: BigDecimal)          extends AtomicExpr
-case class LiteralBoolean(value: Boolean)            extends AtomicExpr with BooleanExpr
-case class PropertyExpr(path: String)                extends AtomicExpr
-case class ToDate(date: AtomicExpr, fmt: AtomicExpr) extends AtomicExpr
-
-case class ValueListExpr(values: List[AtomicExpr]) extends Expr
-
-case class RegexExpr(pattern: String) extends Expr
-case class LikeExpr(pattern: String)  extends Expr
-
-sealed trait ComparisonOperator
-case object EQ  extends ComparisonOperator
-case object NEQ extends ComparisonOperator
-case object LT  extends ComparisonOperator
-case object GT  extends ComparisonOperator
-case object LTE extends ComparisonOperator
-case object GTE extends ComparisonOperator
-
-sealed trait Arg
-case class PropertyArg(propery: PropertyExpr) extends Arg
-case class ValueArg(value: AtomicExpr)        extends Arg
-
-class QueryParserException(message: String = null) extends RuntimeException(message)
 
 class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
 
-  val toValList: AtomicExpr => ValueListExpr = v => ValueListExpr(List(v))
-  val combineVals: (ValueListExpr, AtomicExpr) => ValueListExpr = (list, ve) =>
+  private val toValList: AtomicExpr => ValueListExpr = v => ValueListExpr(List(v))
+  private val combineVals: (ValueListExpr, AtomicExpr) => ValueListExpr = (list, ve) =>
     ValueListExpr(ve :: list.values)
   private val printableChar                  = CharPredicate.Printable -- "'"
   private val toNum: String => LiteralNumber = (s: String) => LiteralNumber(BigDecimal(s))
@@ -203,23 +174,6 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
 
   implicit def wspStr(s: String): Rule0 = rule {
     str(s) ~ zeroOrMore(' ')
-  }
-
-}
-
-object QueryParser {
-
-  def parse[F[_]: Sync](s: String): F[BooleanExpr] = {
-    val parser = new QueryParser(s)
-    //parse input, and in case of ParseErrors format a nice message
-    import Parser.DeliveryScheme.Throw
-    Sync[F]
-      .delay(parser.InputLine.run())
-      .adaptError {
-        case pe: ParseError =>
-          new QueryParserException(
-            parser.formatError(pe, new ErrorFormatter(showExpected = true, showPosition = true)))
-      }
   }
 
 }

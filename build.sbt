@@ -1,6 +1,5 @@
 lazy val commonSettings = Seq(
   organization := "org.geolatte",
-  name := "featureserver3",
   version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.12.8",
   scalacOptions ++= Seq(
@@ -16,9 +15,20 @@ lazy val commonSettings = Seq(
   ),
   addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
   addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
+)
+lazy val core = (project in file("core"))
+  .settings(
+    name := "featureserver-core",
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel"  %% "cats-effect"    % catsEffectVersion withSources () withJavadoc (),
+      "ch.qos.logback" % "logback-classic" % LogbackVersion
+    )
   )
+
 lazy val http = (project in file("http"))
   .settings(
+    name := "featureserver-http",
     commonSettings,
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
@@ -35,6 +45,7 @@ lazy val http = (project in file("http"))
 
 lazy val query = (project in file("query"))
   .settings(
+    name := "featureserver-query",
     commonSettings,
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats-effect"    % catsEffectVersion withSources () withJavadoc (),
@@ -43,10 +54,14 @@ lazy val query = (project in file("query"))
       "org.parboiled"  %% "parboiled"      % parboiledVersion withJavadoc (),
       "ch.qos.logback" % "logback-classic" % LogbackVersion
     )
-  )
+  ).dependsOn(core)
 
 lazy val root = (project in file("."))
-  .aggregate(query, http)
+  .settings(
+    name := "featureserver3",
+    commonSettings
+  )
+  .aggregate(core, query, http)
 
 val Http4sVersion     = "0.20.3"
 val CirceVersion      = "0.11.1"
