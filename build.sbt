@@ -16,7 +16,7 @@ lazy val commonSettings = Seq(
   ),
   addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
   addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
-)
+  )
 lazy val http = (project in file("http"))
   .settings(
     commonSettings,
@@ -28,6 +28,7 @@ lazy val http = (project in file("http"))
       "org.http4s"     %% "http4s-dsl"          % Http4sVersion withSources () withJavadoc (),
       "io.circe"       %% "circe-generic"       % CirceVersion,
       "org.specs2"     %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
+      "org.specs2"     %% "specs2-cats"         % Specs2Version % "test" withJavadoc (),
       "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
@@ -38,6 +39,7 @@ lazy val query = (project in file("query"))
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats-effect"    % catsEffectVersion withSources () withJavadoc (),
       "org.specs2"     %% "specs2-core"    % Specs2Version % "test" withJavadoc (),
+      "org.specs2"     %% "specs2-cats"    % Specs2Version % "test" withJavadoc (),
       "org.parboiled"  %% "parboiled"      % parboiledVersion withJavadoc (),
       "ch.qos.logback" % "logback-classic" % LogbackVersion
     )
@@ -48,7 +50,7 @@ lazy val root = (project in file("."))
 
 val Http4sVersion     = "0.20.3"
 val CirceVersion      = "0.11.1"
-val Specs2Version     = "4.1.0"
+val Specs2Version     = "4.5.1"
 val LogbackVersion    = "1.2.3"
 val catsEffectVersion = "1.3.1"
 val parboiledVersion  = "2.1.7"

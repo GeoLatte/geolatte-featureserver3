@@ -1,9 +1,8 @@
 package org.geolatte.query
 
+import cats.effect._
+import cats.implicits._
 import org.parboiled2._
-import shapeless.HNil
-
-import scala.util.{Failure, Success, Try}
 
 /**
   * A parser for simple Query expression
@@ -63,10 +62,10 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   val toValList: AtomicExpr => ValueListExpr = v => ValueListExpr(List(v))
   val combineVals: (ValueListExpr, AtomicExpr) => ValueListExpr = (list, ve) =>
     ValueListExpr(ve :: list.values)
-  private val printableChar = CharPredicate.Printable -- "'"
+  private val printableChar                  = CharPredicate.Printable -- "'"
   private val toNum: String => LiteralNumber = (s: String) => LiteralNumber(BigDecimal(s))
 
-  def InputLine :Rule1[BooleanExpr] = rule { BooleanExpression ~ EOI }
+  def InputLine: Rule1[BooleanExpr] = rule { BooleanExpression ~ EOI }
 
   def BooleanExpression: Rule1[BooleanExpr] = rule {
     BooleanTerm ~ WS ~ zeroOrMore(ignoreCase("or") ~ WS ~ BooleanTerm ~> BooleanOr)
@@ -76,9 +75,13 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
     BooleanFactor ~ WS ~ zeroOrMore(ignoreCase("and") ~ WS ~ BooleanFactor ~> BooleanAnd)
   }
 
-  private def BooleanFactor = rule { WS ~ ignoreCase("not") ~ WS ~ BooleanPrim ~> BooleanNot | BooleanPrim }
+  private def BooleanFactor = rule {
+    WS ~ ignoreCase("not") ~ WS ~ BooleanPrim ~> BooleanNot | BooleanPrim
+  }
 
-  private def BooleanPrim = rule { WS ~ ch('(') ~ WS ~ BooleanExpression ~ WS ~ ch(')') ~ WS | Predicate }
+  private def BooleanPrim = rule {
+    WS ~ ch('(') ~ WS ~ BooleanExpression ~ WS ~ ch(')') ~ WS | Predicate
+  }
 
   private def Predicate = rule {
     spatialRelPred | BetweenAndPred | ComparisonPred | ILikePred | InPred | LikePred | RegexPred | LiteralBool | isNullPred | JsonContainsPred
@@ -90,7 +93,9 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
     (WS ~ ignoreCase("intersects") ~ WS ~ GeomLiteral) ~> IntersectsPredicate
   }
 
-  private def GeomLiteral = rule { (ignoreCase("bbox") ~ push(None)) | LiteralStr ~> (s => Some(s.value)) }
+  private def GeomLiteral = rule {
+    (ignoreCase("bbox") ~ push(None)) | LiteralStr ~> (s => Some(s.value))
+  }
 
   private def isNullPred = rule {
     WS ~ AtomicExpression ~ WS ~ MayBe ~ WS ~ ignoreCase("null") ~> NullTestPredicate
@@ -140,7 +145,9 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
     ) ~ WS ~ ")"
   }
 
-  private def AtomicExpression = rule { FunctionApp | LiteralBool | LiteralStr | LiteralNum | Property }
+  private def AtomicExpression = rule {
+    FunctionApp | LiteralBool | LiteralStr | LiteralNum | Property
+  }
 
   private def FunctionApp = rule { ToDateApp }
 
@@ -164,7 +171,7 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   private def Regex = rule {
-    ch('/') ~ clearSB() ~ zeroOrMore( noneOf( "/" ) ~ appendSB() ) ~ ch( '/' ) ~ push(
+    ch('/') ~ clearSB() ~ zeroOrMore(noneOf("/") ~ appendSB()) ~ ch('/') ~ push(
       RegexExpr(sb.toString)
     )
   }
@@ -201,19 +208,18 @@ class QueryParser(val input: ParserInput) extends Parser with StringBuilding {
 }
 
 object QueryParser {
-  def parse(s: String): Try[BooleanExpr] = {
+
+  def parse[F[_]: Sync](s: String): F[BooleanExpr] = {
     val parser = new QueryParser(s)
     //parse input, and in case of ParseErrors format a nice message
-    parser.InputLine.run() match {
-      case s @ Success(_) => s
-      case Failure(pe: ParseError) =>
-        Failure(
+    import Parser.DeliveryScheme.Throw
+    Sync[F]
+      .delay(parser.InputLine.run())
+      .adaptError {
+        case pe: ParseError =>
           new QueryParserException(
-            parser.formatError(pe, new ErrorFormatter(showExpected = true, showPosition = true))
-          )
-        )
-      case f @ Failure(_) => f
-    }
+            parser.formatError(pe, new ErrorFormatter(showExpected = true, showPosition = true)))
+      }
   }
 
 }
