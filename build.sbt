@@ -21,8 +21,10 @@ lazy val core = (project in file("core"))
     name := "featureserver-core",
     commonSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats-effect"    % catsEffectVersion withSources () withJavadoc (),
-      "ch.qos.logback" % "logback-classic" % LogbackVersion
+      "org.typelevel"  %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
+      "org.geolatte"   %% "geolatte-geom-scala" % geomVersion withJavadoc () withSources (),
+      "co.fs2"         %% "fs2-core"            % fs2Version withJavadoc (),
+      "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
 
@@ -54,7 +56,8 @@ lazy val query = (project in file("query"))
       "org.parboiled"  %% "parboiled"      % parboiledVersion withJavadoc (),
       "ch.qos.logback" % "logback-classic" % LogbackVersion
     )
-  ).dependsOn(core)
+  )
+  .dependsOn(core)
 
 lazy val root = (project in file("."))
   .settings(
@@ -69,3 +72,5 @@ val Specs2Version     = "4.5.1"
 val LogbackVersion    = "1.2.3"
 val catsEffectVersion = "1.3.1"
 val parboiledVersion  = "2.1.7"
+val geomVersion       = "1.4.0"
+val fs2Version        = "1.0.5"
