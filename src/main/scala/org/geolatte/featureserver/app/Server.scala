@@ -35,15 +35,7 @@ import org.http4s.server.Router
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
   */
 object Server {
-
-  def getTransactor[F[_]: Async: ContextShift]: Transactor[F] =
-    Transactor.fromDriverManager[F](
-      "org.postgresql.Driver",
-      "jdbc:postgresql://localhost:9432/fserver",
-      "fserver",
-      ""
-    )
-
+  
   def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] = {
 
     for {
