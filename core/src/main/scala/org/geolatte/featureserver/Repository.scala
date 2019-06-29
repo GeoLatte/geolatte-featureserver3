@@ -2,7 +2,7 @@ package org.geolatte.featureserver
 
 import org.geolatte.featureserver.QueryExpr.Expr
 import fs2.Stream
-import org.geolatte.featureserver.Domain.Database
+import org.geolatte.featureserver.Domain._
 import org.geolatte.geom.types._
 
 /**
@@ -54,7 +54,7 @@ trait Repository[F[_]] {
 
   def metadata(database: String, collection: String, withCount: Boolean = false): F[Metadata]
 
-  def listCollections(dbname: String): F[List[String]]
+  def listCollections(dbname: String): F[List[Collection]]
 
   def existsCollection(dbName: String, colName: String): F[Boolean]
 

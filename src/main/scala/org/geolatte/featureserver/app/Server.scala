@@ -3,7 +3,7 @@ package org.geolatte.featureserver.app
 import cats.effect.{Async, ConcurrentEffect, ContextShift, Timer}
 import doobie.util.transactor.Transactor
 import fs2.Stream
-import org.geolatte.featureserver.FeatureServerRoutes
+import org.geolatte.featureserver.MetaEndpoints
 import org.geolatte.featureserver.postgres.PgRepository
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.Logger
@@ -27,7 +27,7 @@ object Server {
 
     val xa           = getTransactor
     val repo         = new PgRepository[F](xa)
-    val httpApp      = Router("/api" -> FeatureServerRoutes.metaRoutes[F](repo)).orNotFound
+    val httpApp      = MetaEndpoints.endpoints[F]( repo ).orNotFound
     val finalHttpApp = Logger.httpApp(true, false)(httpApp)
 
     for {

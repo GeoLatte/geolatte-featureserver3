@@ -7,4 +7,6 @@ object Domain {
 
   case class Database(name: String)
 
+  case class Collection(db: Database, name: String)
+
 }

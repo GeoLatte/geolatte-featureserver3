@@ -13,4 +13,5 @@ object PgRepositoryTypeSpec extends Specification with doobie.specs2.IOChecker {
   override val  transactor: doobie.Transactor[IO] =  testTransactor
 
   check( Sql.listDbs )
+  check( Sql.listCollections("test"))
 }
