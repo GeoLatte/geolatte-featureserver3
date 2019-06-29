@@ -8,6 +8,7 @@ import org.geolatte.featureserver.postgres.PgRepository
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.Logger
 import org.http4s.implicits._
+import org.http4s.server.Router
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
@@ -26,7 +27,7 @@ object Server {
 
     val xa           = getTransactor
     val repo         = new PgRepository[F](xa)
-    val httpApp      = FeatureServerRoutes.metaRoutes[F](repo).orNotFound
+    val httpApp      = Router("/api" -> FeatureServerRoutes.metaRoutes[F](repo)).orNotFound
     val finalHttpApp = Logger.httpApp(true, false)(httpApp)
 
     for {
