@@ -16,12 +16,17 @@
 
 package org.geolatte.featureserver.app
 
-import cats.effect.{Async, ConcurrentEffect, ContextShift, Timer}
+import org.geolatte.featureserver.config._
+import cats.effect.{Async, ConcurrentEffect, ContextShift, Resource, Timer}
+import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import fs2.Stream
+import io.circe.config.parser
 import org.geolatte.featureserver.MetaEndpoints
+import org.geolatte.featureserver.config.Config
 import org.geolatte.featureserver.postgres.PgRepository
 import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.{Router, Server => H4Server}
 import org.http4s.server.middleware.Logger
 import org.http4s.implicits._
 import org.http4s.server.Router
@@ -39,19 +44,21 @@ object Server {
       ""
     )
 
-  def stream[F[_]: ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
-
-    val xa           = getTransactor
-    val repo         = new PgRepository[F](xa)
-    val httpApp      = MetaEndpoints.endpoints[F]( repo ).orNotFound
-    val finalHttpApp = Logger.httpApp(true, false)(httpApp)
+  def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] = {
 
     for {
-      exitCode <- BlazeServerBuilder[F]
-        .bindHttp(8080, "0.0.0.0")
+      config <- Resource.liftF(parser.decodePathF[F, Config]("featureserver"))
+      connEc <- ExecutionContexts.fixedThreadPool[F](config.db.connections.poolSize)
+      txnEc  <- ExecutionContexts.cachedThreadPool[F]
+      xa     <- DbConfig.dbTransactor(config.db, connEc, txnEc)
+      repo         = new PgRepository[F](xa)
+      httpApp      = MetaEndpoints.endpoints[F](repo).orNotFound
+      finalHttpApp = Logger.httpApp(true, false)(httpApp)
+      server <- BlazeServerBuilder[F]
+        .bindHttp(config.server.port, config.server.host)
         .withHttpApp(finalHttpApp)
-        .serve
-    } yield exitCode
-  }.drain
+        .resource
+    } yield server
+  }
 
 }

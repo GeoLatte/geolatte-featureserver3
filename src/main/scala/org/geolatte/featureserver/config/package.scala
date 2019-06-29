@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package org.geolatte.featureserver.app
+package org.geolatte.featureserver
 
-import cats.implicits._
-import cats.effect.{ExitCode, IO, IOApp}
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 
+/**
+ * Created by Karel Maesen, Geovise BVBA on 2019-06-29.
+ */
+package object config {
 
-object Main extends IOApp {
-  def run(args: List[String]): IO[ExitCode] =
-    Server.createServer.use( _ => IO.never).as(ExitCode.Success)
+    implicit val srDec: Decoder[ServerConfig] = deriveDecoder
+    implicit val dbconnDec: Decoder[DbConnectionsConfig] = deriveDecoder
+    implicit val dbDec: Decoder[DbConfig] = deriveDecoder
+    implicit val cfgDec: Decoder[Config] = deriveDecoder
+
 }

@@ -73,6 +73,7 @@ lazy val postgres = (project in file("postgres"))
       "org.specs2"    %% "specs2-cats" % Specs2Version % "test" withJavadoc (),
       "org.tpolecat" %% "doobie-core"     % doobieVersion withJavadoc () withSources,
       "org.tpolecat" %% "doobie-postgres" % doobieVersion withJavadoc () withSources,
+      "org.tpolecat"   %% "doobie-hikari"  % doobieVersion,
       "org.tpolecat"   %% "doobie-specs2"  % doobieVersion % "test",
       "ch.qos.logback" % "logback-classic" % LogbackVersion
     )
@@ -87,21 +88,23 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
       "org.specs2"    %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
-      "org.http4s"    %% "http4s-blaze-server" % Http4sVersion
+      "org.http4s"    %% "http4s-blaze-server" % Http4sVersion,
+      "io.circe"      %% "circe-config"        % circeConfigVersion
     )
   )
   .aggregate(core, query, http, postgres)
   .dependsOn(core, query, http, postgres)
 
-val Http4sVersion     = "0.20.3"
-val CirceVersion      = "0.11.1"
-val Specs2Version     = "4.5.1"
-val LogbackVersion    = "1.2.3"
-val catsEffectVersion = "1.3.1"
-val parboiledVersion  = "2.1.7"
-val geomVersion       = "1.4.0"
-val fs2Version        = "1.0.5"
-val doobieVersion     = "0.7.0"
+val Http4sVersion      = "0.20.3"
+val CirceVersion       = "0.11.1"
+val Specs2Version      = "4.5.1"
+val LogbackVersion     = "1.2.3"
+val catsEffectVersion  = "1.3.1"
+val parboiledVersion   = "2.1.7"
+val geomVersion        = "1.4.0"
+val fs2Version         = "1.0.5"
+val doobieVersion      = "0.7.0"
+val circeConfigVersion = "0.6.1"
 
 //TODO -- use docker-compose to run integration tests such as in
 // https://github.com/lloydmeta/http4s-doobie-docker-scratchpad/blob/master/build.sbt
