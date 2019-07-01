@@ -60,7 +60,7 @@ trait Repository[F[_]] {
       explode: Boolean = false
   )
 
-  def listDatabases: F[List[Database]]
+  def listDatabases: F[List[Schema]]
 
   def createDb(dbname: String): F[Unit]
 
@@ -70,7 +70,7 @@ trait Repository[F[_]] {
 
   def metadata(database: String, collection: String, withCount: Boolean = false): F[Metadata]
 
-  def listCollections(dbname: String): F[List[Collection]]
+  def listCollections(dbname: String): F[List[Table]]
 
   def existsCollection(dbName: String, colName: String): F[Boolean]
 

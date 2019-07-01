@@ -18,64 +18,55 @@ package org.geolatte.featureserver
 
 import cats.effect.Sync
 import cats.implicits._
-import io.circe.{Encoder, Json}
+import io.circe.Encoder
 import org.geolatte.featureserver.Domain._
-import org.http4s.{EntityDecoder, EntityEncoder, HttpRoutes}
+import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import io.circe.syntax._
-
 import org.http4s.circe._
+import org.http4s.server.Router
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
   */
-class MetaEndpoints[F[_]: Sync] extends Http4sDsl[F] {
+class MetaEndpoints[F[_]: Sync](repo: Repository[F]) extends Http4sDsl[F] {
 
-  implicit val encodeDb: Encoder[Database] = new Encoder[Database] {
-    final def apply(a: Database): Json = Json.obj(
-      ("name", Json.fromString(a.name)),
-      ("url", Json.fromString((Root / "databases" / a.name).toString()))
-    )
+  private def toJsonOk[A](a: A)(implicit enc: Encoder[A]) = Ok(a.asJson)
+
+  private def getSchemas(implicit enc: Encoder[Schema]) = {
+    repo.listDatabases >>= (d => toJsonOk(d))
   }
 
-  implicit val encodeCollection: Encoder[Collection] = new Encoder[Collection] {
-    final def apply(a: Collection): Json = Json.obj(
-      ("name", Json.fromString(a.name)),
-      ("url", Json.fromString((Root / "databases" / a.db.name / a.name).toString()))
-    )
-  }
+  private def listTables(schema: String)(implicit enc: Encoder[Table]) =
+    for {
+      tables <- repo.listCollections(schema)
+      resp   <- toJsonOk(tables)
+    } yield resp
 
-  private def getDbs(repo: Repository[F]): HttpRoutes[F] = {
+  private def apiv1: HttpRoutes[F] = {
 
+    import Codecs.V1._
     HttpRoutes.of[F] {
-
-      case GET -> Root / "api" / "databases" =>
-        for {
-          databases <- repo.listDatabases
-          resp      <- Ok(databases.asJson)
-        } yield resp
-
+      case GET -> Root / "databases"          => getSchemas
+      case GET -> Root / "databases" / dbName => listTables(dbName)
     }
   }
 
-  private def getDb(repo: Repository[F]): HttpRoutes[F] = {
+  private def apiv2: HttpRoutes[F] = {
+    import Codecs.V2._
     HttpRoutes.of[F] {
-
-      case GET -> Root / "api" / "databases" / dbName =>
-        for {
-          collections <- repo.listCollections(dbName)
-          resp        <- Ok(collections.asJson)
-        } yield resp
-
+      case GET -> Root / "schemas"        => getSchemas
+      case GET -> Root / "schemas" / name => listTables(name)
     }
   }
 
-  def endpoints(repo: Repository[F]): HttpRoutes[F] = getDbs(repo) <+> getDb(repo)
+  def endpoints: HttpRoutes[F] =
+    Router("/api" -> apiv1, "/api/v2" -> apiv2)
 }
 
 object MetaEndpoints {
 
   def endpoints[F[_]: Sync](repo: Repository[F]): HttpRoutes[F] = {
-    new MetaEndpoints[F].endpoints(repo)
+    new MetaEndpoints[F](repo).endpoints
   }
 }

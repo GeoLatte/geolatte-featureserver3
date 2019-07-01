@@ -21,8 +21,8 @@ package org.geolatte.featureserver
  */
 object Domain {
 
-  case class Database(name: String)
+  case class Schema(name: String)
 
-  case class Collection(db: Database, name: String)
+  case class Table(schema: Schema, name: String)
 
 }

@@ -25,17 +25,17 @@ import org.geolatte.featureserver.Domain._
   */
 private[postgres] object Sql {
 
-  def listDbs: Query0[Option[Database]] =
+  def listDbs: Query0[Option[Schema]] =
     sql"""
     select distinct s.schema_name from information_schema.schemata s
     inner join information_schema.tables t on (s.schema_name = t.table_schema)
     where t.table_name = 'geolatte_nosql_collections';
-    """.query[Option[Database]]
+    """.query[Option[Schema]]
 
-  def listCollections(dbName: String): doobie.Query0[Option[Collection]] =
+  def listCollections(dbName: String): doobie.Query0[Option[Table]] =
     sql"""
          select distinct s.schema_name, t.table_name from information_schema.schemata s
          inner join information_schema.tables t on (s.schema_name = t.table_schema)
          where s.schema_name = $dbName and not (t.table_name ilike 'geolatte_%');
-       """.query[Option[Collection]]
+       """.query[Option[Table]]
 }

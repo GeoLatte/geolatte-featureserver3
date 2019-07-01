@@ -29,7 +29,7 @@ import org.geolatte.geom.types.Position
   */
 class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extends Repository[F] {
 
-  override def listDatabases: F[List[Database]] =
+  override def listDatabases: F[List[Schema]] =
     Sql.listDbs.stream.collect { case Some(s) => s }.compile.toList.transact(xa)
 
   override def createDb(dbname: String): F[Unit] = ???
@@ -40,7 +40,7 @@ class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extend
 
   override def metadata(database: String, collection: String, withCount: Boolean): F[Metadata] = ???
 
-  override def listCollections(dbName: String): F[List[Collection]] =
+  override def listCollections(dbName: String): F[List[Table]] =
     Sql.listCollections(dbName).stream.collect { case Some(s) => s }.compile.toList.transact(xa)
 
   override def existsCollection(dbName: String, colName: String): F[Boolean] = ???

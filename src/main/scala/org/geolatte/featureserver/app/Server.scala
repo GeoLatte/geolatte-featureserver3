@@ -35,7 +35,7 @@ import org.http4s.server.Router
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
   */
 object Server {
-  
+
   def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] = {
 
     for {
