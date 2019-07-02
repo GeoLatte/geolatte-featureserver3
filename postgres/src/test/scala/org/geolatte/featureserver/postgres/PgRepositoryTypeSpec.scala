@@ -18,6 +18,7 @@ package org.geolatte.featureserver.postgres
 
 import cats.effect._
 import doobie.util.transactor.Transactor
+import org.geolatte.featureserver.SpatialQuery
 import org.specs2.mutable.Specification
 
 
@@ -30,4 +31,6 @@ object PgRepositoryTypeSpec extends Specification with doobie.specs2.IOChecker {
 
   check( Sql.listDbs )
   check( Sql.listCollections("test"))
+  check( Sql.query("featureserver", "adviezen", SpatialQuery(), None, None))
+  check( Sql.query("featureserver", "adviezen", SpatialQuery(), None, Some(10)))
 }

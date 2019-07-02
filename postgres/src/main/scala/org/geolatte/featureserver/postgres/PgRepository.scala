@@ -16,32 +16,51 @@
 
 package org.geolatte.featureserver.postgres
 
-import cats.effect.{Bracket, Sync}
-import cats.implicits._
+import cats.effect.Bracket
 import doobie._
 import doobie.implicits._
+import fs2.Stream
+import io.circe.Json
+import org.geolatte.featureserver
+import org.geolatte.featureserver._
 import org.geolatte.featureserver.Domain._
-import org.geolatte.featureserver.{QueryExpr, Repository}
 import org.geolatte.geom.types.Position
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
   */
-class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extends Repository[F] {
+class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F])
+    extends Repository[F]
+    with MetadataRepository[F]
+    with QueryRepository[F] {
 
-  override def listDatabases: F[List[Schema]] =
+  override def listSchemas: F[List[Schema]] =
     Sql.listDbs.stream.collect { case Some(s) => s }.compile.toList.transact(xa)
 
-  override def createDb(dbname: String): F[Unit] = ???
-
-  override def dropDb(dbname: String): F[Unit] = ???
-
-  override def count(database: String, collection: String): F[Long] = ???
-
-  override def metadata(database: String, collection: String, withCount: Boolean): F[Metadata] = ???
-
-  override def listCollections(dbName: String): F[List[Table]] =
+  override def listTables(dbName: String): F[List[Table]] =
     Sql.listCollections(dbName).stream.collect { case Some(s) => s }.compile.toList.transact(xa)
+
+  override def queryList(schema: String,
+                         table: String,
+                         spatialQuery: SpatialQuery,
+                         start: Option[Long],
+                         limit: Option[Long]): F[List[Json]] =
+    Sql
+      .query(schema, table, spatialQuery, start, limit)
+      .to[List]
+      .transact(xa)
+
+  override def queryStream(schema: String,
+                           table: String,
+                           spatialQuery: SpatialQuery,
+                           start: Option[Long],
+                           limit: Option[Long]): Stream[F, String] =
+    Sql
+      .query(schema, table, spatialQuery, start, limit)
+      .stream
+      .map(json => json.noSpaces)
+      .intersperse("\n")
+      .transact(xa)
 
   override def existsCollection(dbName: String, colName: String): F[Boolean] = ???
 
@@ -54,11 +73,13 @@ class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extend
 
   override def deleteCollection(dbName: String, colName: String): F[Boolean] = ???
 
-  override def query(database: String,
-                     collection: String,
-                     spatialQuery: SpatialQuery,
-                     start: Option[Int],
-                     limit: Option[Int]): fs2.Stream[F, Feature] = ???
+  override def createDb(dbname: String): F[Unit] = ???
+
+  override def dropDb(dbname: String): F[Unit] = ???
+
+  override def count(database: String, collection: String): F[Long] = ???
+
+  override def metadata(database: String, collection: String, withCount: Boolean): F[Metadata] = ???
 
   override def distinct[P <: Position](database: String,
                                        collection: String,
@@ -73,11 +94,11 @@ class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extend
                       updateSpec: UpdateSpec): F[Int] = ???
 
   /**
-    * Saves a view for the specified database and collection.
+    * Saves a view for the specified schema and table.
     *
-    * @param database the database for the view
-    * @param collection the collection for the view
-    * @param viewDef the view definition
+    * @param database   the schema for the view
+    * @param collection the table for the view
+    * @param viewDef    the view definition
     * @return eventually true if this save resulted in the update of an existing view, false otherwise
     */
   override def saveView(database: String, collection: String, viewDef: View): F[Unit] = ???
@@ -95,4 +116,5 @@ class PgRepository[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F]) extend
   override def getIndex(database: String, collection: String, index: String): F[Index] = ???
 
   override def dropIndex(database: String, collection: String, index: String): F[Unit] = ???
+
 }

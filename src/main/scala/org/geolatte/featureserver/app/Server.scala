@@ -17,12 +17,14 @@
 package org.geolatte.featureserver.app
 
 import org.geolatte.featureserver.config._
+import cats._
+import cats.implicits._
 import cats.effect.{Async, ConcurrentEffect, ContextShift, Resource, Timer}
 import doobie.util.ExecutionContexts
 import doobie.util.transactor.Transactor
 import fs2.Stream
 import io.circe.config.parser
-import org.geolatte.featureserver.MetaEndpoints
+import org.geolatte.featureserver.{MetaEndpoints, QueryEndpoints}
 import org.geolatte.featureserver.config.Config
 import org.geolatte.featureserver.postgres.PgRepository
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -44,7 +46,7 @@ object Server {
       txnEc  <- ExecutionContexts.cachedThreadPool[F]
       xa     <- DbConfig.dbTransactor(config.db, connEc, txnEc)
       repo         = new PgRepository[F](xa)
-      httpApp      = MetaEndpoints.endpoints[F](repo).orNotFound
+      httpApp      = (MetaEndpoints.endpoints[F](repo) <+> QueryEndpoints.endpoints[F](repo)).orNotFound
       finalHttpApp = Logger.httpApp(true, false)(httpApp)
       server <- BlazeServerBuilder[F]
         .bindHttp(config.server.port, config.server.host)

@@ -29,17 +29,17 @@ import org.http4s.server.Router
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
   */
-class MetaEndpoints[F[_]: Sync](repo: Repository[F]) extends Http4sDsl[F] {
+class MetaEndpoints[F[_]: Sync](repo: MetadataRepository[F]) extends Http4sDsl[F] {
 
   private def toJsonOk[A](a: A)(implicit enc: Encoder[A]) = Ok(a.asJson)
 
   private def getSchemas(implicit enc: Encoder[Schema]) = {
-    repo.listDatabases >>= (d => toJsonOk(d))
+    repo.listSchemas >>= (d => toJsonOk(d))
   }
 
-  private def listTables(schema: String)(implicit enc: Encoder[Table]) =
+  private def getTables(schema: String)(implicit enc: Encoder[Table]) =
     for {
-      tables <- repo.listCollections(schema)
+      tables <- repo.listTables(schema)
       resp   <- toJsonOk(tables)
     } yield resp
 
@@ -48,7 +48,7 @@ class MetaEndpoints[F[_]: Sync](repo: Repository[F]) extends Http4sDsl[F] {
     import Codecs.V1._
     HttpRoutes.of[F] {
       case GET -> Root / "databases"          => getSchemas
-      case GET -> Root / "databases" / dbName => listTables(dbName)
+      case GET -> Root / "databases" / dbName => getTables(dbName)
     }
   }
 
@@ -56,7 +56,7 @@ class MetaEndpoints[F[_]: Sync](repo: Repository[F]) extends Http4sDsl[F] {
     import Codecs.V2._
     HttpRoutes.of[F] {
       case GET -> Root / "schemas"        => getSchemas
-      case GET -> Root / "schemas" / name => listTables(name)
+      case GET -> Root / "schemas" / name => getTables(name)
     }
   }
 
@@ -66,7 +66,7 @@ class MetaEndpoints[F[_]: Sync](repo: Repository[F]) extends Http4sDsl[F] {
 
 object MetaEndpoints {
 
-  def endpoints[F[_]: Sync](repo: Repository[F]): HttpRoutes[F] = {
+  def endpoints[F[_]: Sync](repo: MetadataRepository[F]): HttpRoutes[F] = {
     new MetaEndpoints[F](repo).endpoints
   }
 }

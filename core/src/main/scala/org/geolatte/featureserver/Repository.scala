@@ -26,11 +26,6 @@ import org.geolatte.geom.types._
   */
 trait Repository[F[_]] {
 
-  type Feature = org.geolatte.geom.types.Feature[Position,String]
-
-  trait Projection {}
-
-  trait SortSpec {}
 
   trait UpdateSpec {}
 
@@ -49,19 +44,6 @@ trait Repository[F[_]] {
       jsonTable: Boolean = true // is table defined by persistence Server? or registered
   )
 
-  case class SpatialQuery(
-      windowOpt: Option[Envelope[Position]] = None,
-      intersectionGeometryWktOpt: Option[String] = None,
-      queryOpt: Option[Expr] = None,
-      projection: Option[Projection] = None,
-      sort: List[SortSpec] = List(),
-      metadata: Metadata,
-      withCount: Boolean = false,
-      explode: Boolean = false
-  )
-
-  def listDatabases: F[List[Schema]]
-
   def createDb(dbname: String): F[Unit]
 
   def dropDb(dbname: String): F[Unit]
@@ -70,7 +52,6 @@ trait Repository[F[_]] {
 
   def metadata(database: String, collection: String, withCount: Boolean = false): F[Metadata]
 
-  def listCollections(dbname: String): F[List[Table]]
 
   def existsCollection(dbName: String, colName: String): F[Boolean]
 
@@ -80,11 +61,6 @@ trait Repository[F[_]] {
 
   def deleteCollection(dbName: String, colName: String): F[Boolean]
 
-  def query(database: String,
-                           collection: String,
-                           spatialQuery: SpatialQuery,
-                           start: Option[Int] = None,
-                           limit: Option[Int] = None): Stream[F, Feature]
 
   def distinct[P <: Position](database: String,
                               collection: String,

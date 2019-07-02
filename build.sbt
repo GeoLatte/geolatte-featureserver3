@@ -14,7 +14,7 @@ lazy val commonSettings = Seq(
     "-Xfatal-warnings"
   ),
   addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
-  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
+  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
 )
 lazy val core = (project in file("core"))
   .settings(
@@ -24,6 +24,7 @@ lazy val core = (project in file("core"))
       "org.typelevel"  %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
       "org.geolatte"   %% "geolatte-geom-scala" % geomVersion withJavadoc () withSources (),
       "co.fs2"         %% "fs2-core"            % fs2Version withJavadoc (),
+      "io.circe"       %% "circe-core"          % CirceVersion,
       "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
@@ -68,9 +69,10 @@ lazy val postgres = (project in file("postgres"))
     name := "featureserver-postgres",
     commonSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % catsEffectVersion withSources () withJavadoc (),
-      "org.specs2"    %% "specs2-core" % Specs2Version % "test" withJavadoc (),
-      "org.specs2"    %% "specs2-cats" % Specs2Version % "test" withJavadoc (),
+      "org.typelevel" %% "cats-effect"  % catsEffectVersion withSources () withJavadoc (),
+      "org.specs2"    %% "specs2-core"  % Specs2Version % "test" withJavadoc (),
+      "org.specs2"    %% "specs2-cats"  % Specs2Version % "test" withJavadoc (),
+      "io.circe"      %% "circe-parser" % CirceVersion,
       "org.tpolecat" %% "doobie-core"     % doobieVersion withJavadoc () withSources,
       "org.tpolecat" %% "doobie-postgres" % doobieVersion withJavadoc () withSources,
       "org.tpolecat"   %% "doobie-hikari"  % doobieVersion,
