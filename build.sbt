@@ -1,13 +1,8 @@
-val commonResolvers = Seq(
-  "Local Maven Repository" at Path.userHome.asFile.toURI.toURL + "/.m2/repository",
-  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
-  )
-
-
 lazy val commonSettings = Seq(
   organization := "org.geolatte",
   version := "0.0.1-SNAPSHOT",
   scalaVersion := "2.13.1",
+  useCoursier := false,  // due to bug in Coursier. See: https://stackoverflow.com/questions/60164254/sbt-1-3-8-publishlocal-creates-a-jar-that-sbt-update-cant-resolve-scala-versio
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -18,7 +13,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-Xfatal-warnings"
   ),
-  resolvers ++= commonResolvers,
+  resolvers += Resolver.mavenLocal,
   addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.11.0" cross CrossVersion.full),
   addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.3.1")
 )
@@ -29,12 +24,13 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
       "org.geolatte"   %% "geolatte-geom-scala" % geomVersion withJavadoc () withSources (),
+      "org.geolatte"   %% "geolatte-geom-circe" % geomVersion withJavadoc () withSources (),
       "co.fs2"         %% "fs2-core"            % fs2Version withJavadoc (),
       "io.circe"       %% "circe-core"          % CirceVersion,
       "ch.qos.logback" % "logback-classic"      % LogbackVersion
     )
   )
-  .disablePlugins(RevolverPlugin)
+
 
 lazy val http = (project in file("http"))
   .settings(
@@ -53,7 +49,7 @@ lazy val http = (project in file("http"))
     )
   )
   .dependsOn(core)
-  .disablePlugins(RevolverPlugin)
+
 
 lazy val query = (project in file("query"))
   .settings(
@@ -68,7 +64,7 @@ lazy val query = (project in file("query"))
     )
   )
   .dependsOn(core)
-  .disablePlugins(RevolverPlugin)
+
 
 lazy val postgres = (project in file("postgres"))
   .settings(
@@ -87,7 +83,7 @@ lazy val postgres = (project in file("postgres"))
     )
   )
   .dependsOn(core, query % "test->compile")
-  .disablePlugins(RevolverPlugin)
+
 
 lazy val root = (project in file("."))
   .settings(
