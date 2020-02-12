@@ -16,22 +16,17 @@
 
 package org.geolatte.featureserver.app
 
-import org.geolatte.featureserver.config._
-import cats._
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Resource, Timer}
 import cats.implicits._
-import cats.effect.{Async, ConcurrentEffect, ContextShift, Resource, Timer}
 import doobie.util.ExecutionContexts
-import doobie.util.transactor.Transactor
-import fs2.Stream
 import io.circe.config.parser
-import org.geolatte.featureserver.{MetaEndpoints, QueryEndpoints}
-import org.geolatte.featureserver.config.Config
+import org.geolatte.featureserver.config.{Config, _}
 import org.geolatte.featureserver.postgres.PgRepository
-import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.{Router, Server => H4Server}
-import org.http4s.server.middleware.Logger
+import org.geolatte.featureserver.{MetaEndpoints, QueryEndpoints}
 import org.http4s.implicits._
-import org.http4s.server.Router
+import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.middleware.Logger
+import org.http4s.server.{Server => H4Server}
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.
@@ -41,9 +36,15 @@ object Server {
   def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] = {
 
     for {
-      config <- Resource.liftF(parser.decodePathF[F, Config]("featureserver"))
+      config <- Resource.liftF( parser.decodePathF[F, Config]( "featureserver" ) )
+      server <- createServer( config )
+    } yield server
+  }
+
+  def createServer[F[_]: ContextShift : ConcurrentEffect: Timer](config: Config): Resource[F, H4Server[F]] = {
+    for {
       connEc <- ExecutionContexts.fixedThreadPool[F](config.db.connections.poolSize)
-      txnEc  <- ExecutionContexts.cachedThreadPool[F]
+      txnEc  <- Blocker[F]
       xa     <- DbConfig.dbTransactor(config.db, connEc, txnEc)
       repo         = new PgRepository[F](xa)
       httpApp      = (MetaEndpoints.endpoints[F](repo) <+> QueryEndpoints.endpoints[F](repo)).orNotFound

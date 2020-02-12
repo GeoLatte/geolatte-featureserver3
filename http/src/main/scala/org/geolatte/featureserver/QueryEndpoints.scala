@@ -30,16 +30,27 @@ import org.http4s.circe._ //required for derivation of proper entity encoder
   */
 class QueryEndpoints[F[_]: Sync](repo: QueryRepository[F]) extends Http4sDsl[F] {
 
-  private def query(schema: String, table: String) =
+  private def queryToArray(schema: String, table: String) =
     Ok {
-      repo.query(schema, table, SpatialQuery(), limit = Some(10))
+      //TODO -- actually turn it into an object with a count member
+      for {
+        jss <- repo.queryList(schema, table, SpatialQuery(), limit = Some(10))
+        arr = Json.fromValues(jss)
+      } yield arr
     }
+
+  private def queryToStream(schema: String, table: String) =
+    Ok { repo.queryStream(schema, table, SpatialQuery(), limit = Some(10)) }
+
 
   private def apiv1: HttpRoutes[F] = {
 
     import Codecs.V1._
     HttpRoutes.of[F] {
-      case GET -> Root / "databases" / dbName / collection / "query" => query(dbName, collection)
+      case GET -> Root / "databases" / dbName / collection / "query" =>
+        queryToStream(dbName, collection)
+      case GET -> Root / "databases" / dbName / collection / "featurecollection" =>
+        queryToArray(dbName, collection)
     }
   }
 

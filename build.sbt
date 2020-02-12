@@ -1,7 +1,13 @@
+val commonResolvers = Seq(
+  "Local Maven Repository" at Path.userHome.asFile.toURI.toURL + "/.m2/repository",
+  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+  )
+
+
 lazy val commonSettings = Seq(
   organization := "org.geolatte",
   version := "0.0.1-SNAPSHOT",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.1",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -10,11 +16,11 @@ lazy val commonSettings = Seq(
     "-language:postfixOps",
     "-language:implicitConversions",
     "-feature",
-    "-Ypartial-unification",
     "-Xfatal-warnings"
   ),
-  addCompilerPlugin("org.spire-math" %% "kind-projector"     % "0.9.6"),
-  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4")
+  resolvers ++= commonResolvers,
+  addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.11.0" cross CrossVersion.full),
+  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.3.1")
 )
 lazy val core = (project in file("core"))
   .settings(
@@ -89,24 +95,26 @@ lazy val root = (project in file("."))
     commonSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-effect"         % catsEffectVersion withSources () withJavadoc (),
-      "org.specs2"    %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
+      "io.circe"      %% "circe-config"        % CirceConfigVersion,
       "org.http4s"    %% "http4s-blaze-server" % Http4sVersion,
-      "io.circe"      %% "circe-config"        % circeConfigVersion
-    )
+      "org.specs2"    %% "specs2-core"         % Specs2Version % "test" withJavadoc (),
+      "org.specs2"     %% "specs2-cats"         % Specs2Version % "test" withJavadoc (),
+      "io.circe"      %% "circe-literal"        % CirceVersion % "test" withJavadoc ()
+      )
   )
   .aggregate(core, query, http, postgres)
   .dependsOn(core, query, http, postgres)
 
-val Http4sVersion      = "0.20.3"
-val CirceVersion       = "0.11.1"
-val Specs2Version      = "4.5.1"
+val Http4sVersion      = "0.21.0"
+val CirceVersion       = "0.12.2"
+val Specs2Version      = "4.8.2"
 val LogbackVersion     = "1.2.3"
-val catsEffectVersion  = "1.3.1"
+val catsEffectVersion  = "2.1.1"
 val parboiledVersion   = "2.1.7"
-val geomVersion        = "1.4.0"
-val fs2Version         = "1.0.5"
-val doobieVersion      = "0.7.0"
-val circeConfigVersion = "0.6.1"
+val geomVersion        = "1.5.0-SNAPSHOT"
+val fs2Version         = "2.2.1"
+val doobieVersion      = "0.8.8"
+val CirceConfigVersion = "0.7.0"
 
 //TODO -- use docker-compose to run integration tests such as in
 // https://github.com/lloydmeta/http4s-doobie-docker-scratchpad/blob/master/build.sbt

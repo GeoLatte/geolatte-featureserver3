@@ -66,7 +66,7 @@ private[postgres] object Sql {
             limit: Option[Long]) = {
 
     val selectFrom =
-      fr"""select json::jsonb || json_build_object('geometry', st_asgeojson(geometry)::jsonb)::jsonb from"""
+      fr"""select json::jsonb ||json_build_object('geometry', st_asgeojson(geometry)::jsonb)::jsonb from"""
 
     val fromTable = Fragment.const(s"$schema.$table")
     val limitF = limit.map(lim => fr"LIMIT $lim").getOrElse(Fragment.empty)

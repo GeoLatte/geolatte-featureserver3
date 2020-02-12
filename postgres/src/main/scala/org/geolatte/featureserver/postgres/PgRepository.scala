@@ -24,7 +24,7 @@ import io.circe.Json
 import org.geolatte.featureserver
 import org.geolatte.featureserver._
 import org.geolatte.featureserver.Domain._
-import org.geolatte.geom.types.Position
+import org.geolatte.geom.Position
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.

@@ -19,7 +19,7 @@ package org.geolatte.featureserver
 import fs2.Stream
 import io.circe.Json
 import org.geolatte.featureserver.QueryExpr.Expr
-import org.geolatte.geom.types._
+import org.geolatte.geom._
 
 trait Projection {}
 

@@ -19,7 +19,7 @@ package org.geolatte.featureserver
 import org.geolatte.featureserver.QueryExpr.Expr
 import fs2.Stream
 import org.geolatte.featureserver.Domain._
-import org.geolatte.geom.types._
+import org.geolatte.geom._
 
 /**
   * Created by Karel Maesen, Geovise BVBA on 2019-06-28.

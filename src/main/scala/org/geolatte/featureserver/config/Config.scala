@@ -16,7 +16,7 @@
 
 package org.geolatte.featureserver.config
 
-import cats.effect.{Async, ContextShift, Resource}
+import cats.effect.{Async, Blocker, ContextShift, Resource}
 import doobie.hikari.HikariTransactor
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -39,7 +39,7 @@ object DbConfig {
   def dbTransactor[F[_]: Async: ContextShift](
       db: DbConfig,
       connEc: ExecutionContext,
-      txnEc: ExecutionContext): Resource[F, HikariTransactor[F]] = {
+      txnEc: Blocker): Resource[F, HikariTransactor[F]] = {
     HikariTransactor.newHikariTransactor[F](
       db.driver,
       db.url,
