@@ -2,4 +2,10 @@
 
 source $(dirname $0)/env.sh
 
-http GET $BASEURL/databases
+if [ "$VERSION" == "v2" ]
+then
+  echo "Using $VERSION"
+  http GET $BASEURL/${VERSION}/schemas
+else
+  http GET $BASEURL/databases
+fi
